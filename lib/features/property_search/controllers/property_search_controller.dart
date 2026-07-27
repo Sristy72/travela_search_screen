@@ -79,6 +79,13 @@ class PropertySearchController extends BaseController {
     fetchPopularLocations('');
   }
 
+  @override
+  void onClose() {
+    cancelActiveStream();
+    _debounceTimer?.cancel();
+    super.onClose();
+  }
+
   static final List<LocationModel> defaultFallbackLocations = [
     LocationModel(id: 1, name: 'Bashundhara Resedential Area', lat: 23.8103, lng: 90.4312),
     LocationModel(id: 2, name: 'Dhanmondi', lat: 23.7461, lng: 90.3742),

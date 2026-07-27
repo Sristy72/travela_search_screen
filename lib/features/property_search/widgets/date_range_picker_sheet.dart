@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../controllers/property_search_controller.dart';
+import 'guest_picker_sheet.dart';
 
 class DateRangePickerSheet extends StatelessWidget {
   const DateRangePickerSheet({super.key});
@@ -304,8 +305,16 @@ class DateRangePickerSheet extends StatelessWidget {
                       onPressed: () {
                         final from = selectedFrom.value ?? DateTime.now();
                         final to = selectedTo.value ?? from.add(const Duration(days: 2));
-                        controller.setDates(from, to);
+                        // Save dates without triggering search yet
+                        controller.checkInDate.value = from;
+                        controller.checkOutDate.value = to;
                         Get.back();
+                        // Open guest picker next
+                        Get.bottomSheet(
+                          const GuestPickerSheet(),
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                        );
                       },
                       child: const Text(
                         'Next',

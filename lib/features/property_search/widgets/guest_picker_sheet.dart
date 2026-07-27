@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/property_search_controller.dart';
+import 'price_filter_dialog.dart';
 
 class GuestPickerSheet extends StatelessWidget {
   const GuestPickerSheet({super.key});
@@ -114,8 +115,17 @@ class GuestPickerSheet extends StatelessWidget {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     onPressed: () {
-                      controller.setGuests(adults.value, children.value, infants.value);
+                      // Save guests without triggering search yet
+                      controller.adultsCount.value = adults.value;
+                      controller.childCount.value = children.value;
+                      controller.infantCount.value = infants.value;
                       Get.back();
+                      // Open price filter next
+                      Get.bottomSheet(
+                        const PriceFilterSheet(),
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                      );
                     },
                     child: const Text(
                       'Next',

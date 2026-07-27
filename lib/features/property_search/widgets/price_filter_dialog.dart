@@ -39,6 +39,11 @@ class PriceFilterSheet extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 8),
+          const Text(
+            'Set your nightly budget to find the best stays.',
+            style: TextStyle(fontSize: 13, color: Colors.grey),
+          ),
           const SizedBox(height: 24),
 
           Obx(() => Row(
@@ -98,10 +103,16 @@ class PriceFilterSheet extends StatelessWidget {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   onPressed: () {
-                    controller.setPriceRange(currentRange.value.start, currentRange.value.end);
+                    // Set price range and trigger the full search
+                    controller.minPrice.value = currentRange.value.start;
+                    controller.maxPrice.value = currentRange.value.end;
+                    controller.searchProperties();
                     Get.back();
                   },
-                  child: const Text('Apply', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    'Search',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
                 ),
               ),
             ],
