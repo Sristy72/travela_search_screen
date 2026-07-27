@@ -2,35 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/property_search_controller.dart';
 
-class PriceFilterSheet extends StatefulWidget {
+class PriceFilterSheet extends StatelessWidget {
   const PriceFilterSheet({super.key});
 
   static const Color primaryPink = Color(0xFFE51D5A);
-
-  @override
-  State<PriceFilterSheet> createState() => _PriceFilterSheetState();
-}
-
-class _PriceFilterSheetState extends State<PriceFilterSheet> {
-  late RangeValues _currentRange;
-  final double _min = 500;
-  final double _max = 20000;
-
-  @override
-  void initState() {
-    super.initState();
-    final controller = Get.find<PropertySearchController>();
-    final start = controller.minPrice.value ?? _min;
-    final end = controller.maxPrice.value ?? _max;
-    _currentRange = RangeValues(
-      start.clamp(_min, _max),
-      end.clamp(_min, _max),
-    );
-  }
+  static const double minLimit = 500;
+  static const double maxLimit = 20000;
 
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<PropertySearchController>();
+    final start = (controller.minPrice.value ?? minLimit).clamp(minLimit, maxLimit);
+    final end = (controller.maxPrice.value ?? maxLimit).clamp(minLimit, maxLimit);
+    final currentRange = RangeValues(start, end).obs;
 
     return Container(
       decoration: const BoxDecoration(
@@ -57,38 +41,36 @@ class _PriceFilterSheetState extends State<PriceFilterSheet> {
           ),
           const SizedBox(height: 24),
 
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'BDT ${_currentRange.start.round()}',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: PriceFilterSheet.primaryPink),
-              ),
-              Text(
-                'BDT ${_currentRange.end.round()}',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: PriceFilterSheet.primaryPink),
-              ),
-            ],
-          ),
+          Obx(() => Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'BDT ${currentRange.value.start.round()}',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: PriceFilterSheet.primaryPink),
+                  ),
+                  Text(
+                    'BDT ${currentRange.value.end.round()}',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: PriceFilterSheet.primaryPink),
+                  ),
+                ],
+              )),
           const SizedBox(height: 16),
 
-          RangeSlider(
-            values: _currentRange,
-            min: _min,
-            max: _max,
-            divisions: 39,
-            activeColor: PriceFilterSheet.primaryPink,
-            inactiveColor: Colors.grey.shade300,
-            labels: RangeLabels(
-              'BDT ${_currentRange.start.round()}',
-              'BDT ${_currentRange.end.round()}',
-            ),
-            onChanged: (values) {
-              setState(() {
-                _currentRange = values;
-              });
-            },
-          ),
+          Obx(() => RangeSlider(
+                values: currentRange.value,
+                min: minLimit,
+                max: maxLimit,
+                divisions: 39,
+                activeColor: PriceFilterSheet.primaryPink,
+                inactiveColor: Colors.grey.shade300,
+                labels: RangeLabels(
+                  'BDT ${currentRange.value.start.round()}',
+                  'BDT ${currentRange.value.end.round()}',
+                ),
+                onChanged: (values) {
+                  currentRange.value = values;
+                },
+              )),
           const SizedBox(height: 24),
 
           Row(
@@ -116,7 +98,7 @@ class _PriceFilterSheetState extends State<PriceFilterSheet> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   onPressed: () {
-                    controller.setPriceRange(_currentRange.start, _currentRange.end);
+                    controller.setPriceRange(currentRange.value.start, currentRange.value.end);
                     Get.back();
                   },
                   child: const Text('Apply', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),

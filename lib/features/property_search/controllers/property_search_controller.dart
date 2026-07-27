@@ -71,42 +71,75 @@ class PropertySearchController extends BaseController {
     super.onInit();
     selectedLocation.value = null;
     locationQuery.value = '';
-
-    // Set default dates (today to 2 days from now)
-    final now = DateTime.now();
-    checkInDate.value = now;
-    checkOutDate.value = now.add(const Duration(days: 2));
+    checkInDate.value = null;
+    checkOutDate.value = null;
+    searchState.value = PropertySearchState.initial;
 
     // Fetch initial location suggestions
     fetchPopularLocations('');
   }
 
-  @override
-  void onClose() {
-    cancelActiveStream();
-    _debounceTimer?.cancel();
-    super.onClose();
-  }
+  static final List<LocationModel> defaultFallbackLocations = [
+    LocationModel(id: 1, name: 'Bashundhara Resedential Area', lat: 23.8103, lng: 90.4312),
+    LocationModel(id: 2, name: 'Dhanmondi', lat: 23.7461, lng: 90.3742),
+    LocationModel(id: 3, name: 'Mohammadpur', lat: 23.7658, lng: 90.3582),
+    LocationModel(id: 4, name: 'Green City, Mohammadpur', lat: 23.7670, lng: 90.3590),
+    LocationModel(id: 5, name: 'Mirpur', lat: 23.8068, lng: 90.3687),
+    LocationModel(id: 6, name: 'Mirpur 10', lat: 23.8069, lng: 90.3688),
+    LocationModel(id: 7, name: 'Mirpur-13, Dhaka, Bangladesh', lat: 23.8130, lng: 90.3750),
+    LocationModel(id: 8, name: 'Mirpur-1, Dhaka', lat: 23.7950, lng: 90.3530),
+    LocationModel(id: 9, name: 'Mirpur-10, Dhaka', lat: 23.8069, lng: 90.3688),
+    LocationModel(id: 10, name: 'Mirpur-1', lat: 23.7950, lng: 90.3530),
+    LocationModel(id: 11, name: 'Mirpur - 60 Feet', lat: 23.7880, lng: 90.3650),
+    LocationModel(id: 12, name: 'Mirpur Dohs, Dhaka', lat: 23.8290, lng: 90.3700),
+    LocationModel(id: 13, name: 'Mirpur 12, Dhaka, Bangladesh', lat: 23.8240, lng: 90.3650),
+    LocationModel(id: 14, name: 'Mirpur 14, Dhaka, Bangladesh', lat: 23.8080, lng: 90.3860),
+    LocationModel(id: 15, name: 'Mirpur - 60 Fit', lat: 23.7880, lng: 90.3650),
+    LocationModel(id: 16, name: 'Mirpur 11, Dhaka, Bangladesh', lat: 23.8150, lng: 90.3660),
+    LocationModel(id: 17, name: 'Mirpur 11', lat: 23.8150, lng: 90.3660),
+    LocationModel(id: 18, name: 'Dhanmondi West', lat: 23.7450, lng: 90.3690),
+    LocationModel(id: 19, name: 'Dhanmondi North', lat: 23.7550, lng: 90.3780),
+    LocationModel(id: 20, name: 'Gulshan, Dhaka', lat: 23.7925, lng: 90.4167),
+    LocationModel(id: 21, name: 'Dhaka', lat: 23.8103, lng: 90.4125),
+    LocationModel(id: 22, name: 'Bashundhara Block C', lat: 23.8120, lng: 90.4330),
+    LocationModel(id: 23, name: 'Panthapath', lat: 23.7510, lng: 90.3870),
+    LocationModel(id: 24, name: 'Aftab Nagar', lat: 23.7680, lng: 90.4300),
+  ];
 
   /// Debounced location input handler
   void onLocationQueryChanged(String query) {
     locationQuery.value = query;
     _debounceTimer?.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 350), () {
+    _debounceTimer = Timer(const Duration(milliseconds: 200), () {
       fetchPopularLocations(query);
     });
   }
 
-  /// Fetch popular location suggestions from API
+  /// Fetch popular location suggestions
   Future<void> fetchPopularLocations(String query) async {
     try {
       isLocationsLoading.value = true;
       final results = await _service.fetchPopularLocations(query: query);
-      locationSuggestions.value = results;
+      if (results.isNotEmpty) {
+        locationSuggestions.value = results;
+      } else {
+        _applyFallbackLocations(query);
+      }
     } catch (e) {
-      // Keep previous or empty suggestions gracefully
+      _applyFallbackLocations(query);
     } finally {
       isLocationsLoading.value = false;
+    }
+  }
+
+  void _applyFallbackLocations(String query) {
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) {
+      locationSuggestions.value = defaultFallbackLocations;
+    } else {
+      locationSuggestions.value = defaultFallbackLocations
+          .where((loc) => loc.name.toLowerCase().contains(q))
+          .toList();
     }
   }
 
@@ -115,7 +148,6 @@ class PropertySearchController extends BaseController {
     selectedLocation.value = location;
     locationQuery.value = location.name;
     locationSuggestions.clear();
-    searchProperties();
   }
 
   /// User sets Check-In and Check-Out dates

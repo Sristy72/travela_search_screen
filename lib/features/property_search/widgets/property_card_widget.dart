@@ -1,8 +1,9 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../models/property_item_model.dart';
 
-class PropertyCardWidget extends StatefulWidget {
+class PropertyCardWidget extends StatelessWidget {
   final PropertyItemModel property;
   final int totalDays;
 
@@ -15,27 +16,14 @@ class PropertyCardWidget extends StatefulWidget {
   static const Color primaryPink = Color(0xFFE51D5A);
 
   @override
-  State<PropertyCardWidget> createState() => _PropertyCardWidgetState();
-}
-
-class _PropertyCardWidgetState extends State<PropertyCardWidget> {
-  int _currentImageIndex = 0;
-  final PageController _pageController = PageController();
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final property = widget.property;
     final images = property.images;
     final effectivePrice = property.effectivePrice;
-
-    final days = widget.totalDays > 0 ? widget.totalDays : 1;
+    final days = totalDays > 0 ? totalDays : 1;
     final totalPrice = effectivePrice * days;
+
+    final currentImageIndex = 0.obs;
+    final pageController = PageController();
 
     // Specs string construction
     final specsList = <String>[];
@@ -62,10 +50,10 @@ class _PropertyCardWidgetState extends State<PropertyCardWidget> {
                   aspectRatio: 1.25,
                   child: images.isNotEmpty
                       ? PageView.builder(
-                          controller: _pageController,
+                          controller: pageController,
                           itemCount: images.length,
                           onPageChanged: (index) {
-                            setState(() => _currentImageIndex = index);
+                            currentImageIndex.value = index;
                           },
                           itemBuilder: (context, index) {
                             return CachedNetworkImage(
@@ -122,23 +110,23 @@ class _PropertyCardWidgetState extends State<PropertyCardWidget> {
                   bottom: 12,
                   left: 0,
                   right: 0,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(images.length.clamp(0, 6), (idx) {
-                      return AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        margin: const EdgeInsets.symmetric(horizontal: 3),
-                        width: _currentImageIndex == idx ? 8 : 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: _currentImageIndex == idx
-                              ? Colors.white
-                              : Colors.white.withOpacity(0.5),
-                        ),
-                      );
-                    }),
-                  ),
+                  child: Obx(() => Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(images.length.clamp(0, 6), (idx) {
+                          return AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            margin: const EdgeInsets.symmetric(horizontal: 3),
+                            width: currentImageIndex.value == idx ? 8 : 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: currentImageIndex.value == idx
+                                  ? Colors.white
+                                  : Colors.white.withOpacity(0.5),
+                            ),
+                          );
+                        }),
+                      )),
                 ),
             ],
           ),

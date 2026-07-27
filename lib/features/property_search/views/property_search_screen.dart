@@ -24,16 +24,9 @@ class PropertySearchScreen extends StatelessWidget {
           children: [
             // Top Search Header Bar
             _buildSearchHeader(context, controller),
-            const SizedBox(height: 12),
-
-            // Horizontal Filter Pills Row
-            const FilterBarWidget(),
             const SizedBox(height: 8),
 
-            // Live Stream Progress & Total Count Banner
-            _buildStreamStatusBanner(controller),
-
-            // Main Content Area (Cards / Loader / Empty / Error / Initial)
+            // Obx body dependent on initial state vs active search
             Expanded(
               child: Obx(() {
                 final state = controller.searchState.value;
@@ -43,34 +36,52 @@ class PropertySearchScreen extends StatelessWidget {
                   return _buildInitialSearchState(controller);
                 }
 
-                if (state == PropertySearchState.loading && properties.isEmpty) {
-                  return const ShimmerLoadingWidget();
-                }
+                return Column(
+                  children: [
+                    // Horizontal Filter Pills Row
+                    const FilterBarWidget(),
+                    const SizedBox(height: 8),
 
-                if (state == PropertySearchState.error && properties.isEmpty) {
-                  return _buildErrorState(controller);
-                }
+                    // Live Stream Progress & Total Count Banner
+                    _buildStreamStatusBanner(controller),
 
-                if (state == PropertySearchState.empty) {
-                  return _buildEmptyState(controller);
-                }
+                    // Main Content Area (Cards / Loader / Empty / Error)
+                    Expanded(
+                      child: Builder(
+                        builder: (context) {
+                          if (state == PropertySearchState.loading && properties.isEmpty) {
+                            return const ShimmerLoadingWidget();
+                          }
 
-                // Render properties stream cards in real time as they land
-                return ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  itemCount: properties.length,
-                  itemBuilder: (context, index) {
-                    final property = properties[index];
-                    final days = controller.checkOutDate.value != null && controller.checkInDate.value != null
-                        ? controller.checkOutDate.value!.difference(controller.checkInDate.value!).inDays
-                        : 2;
+                          if (state == PropertySearchState.error && properties.isEmpty) {
+                            return _buildErrorState(controller);
+                          }
 
-                    return PropertyCardWidget(
-                      key: ValueKey('prop_${property.id}'),
-                      property: property,
-                      totalDays: days > 0 ? days : 1,
-                    );
-                  },
+                          if (state == PropertySearchState.empty) {
+                            return _buildEmptyState(controller);
+                          }
+
+                          // Render properties stream cards in real time as they land
+                          return ListView.builder(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            itemCount: properties.length,
+                            itemBuilder: (context, index) {
+                              final property = properties[index];
+                              final days = controller.checkOutDate.value != null && controller.checkInDate.value != null
+                                  ? controller.checkOutDate.value!.difference(controller.checkInDate.value!).inDays
+                                  : 2;
+
+                              return PropertyCardWidget(
+                                key: ValueKey('prop_${property.id}'),
+                                property: property,
+                                totalDays: days > 0 ? days : 1,
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 );
               }),
             ),
@@ -225,110 +236,19 @@ class PropertySearchScreen extends StatelessWidget {
   }
 
   Widget _buildInitialSearchState(PropertySearchController controller) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
       child: Column(
-        children: [
-          const SizedBox(height: 32),
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: primaryPink.withOpacity(0.06),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.travel_explore_rounded,
-              size: 72,
-              color: primaryPink,
-            ),
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'Where to next?',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: const [
+          Text(
             'Tap the search bar to find hotels, apartments, and luxury stays.',
-            textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey,
+              color: Colors.black54,
               height: 1.4,
             ),
           ),
-          const SizedBox(height: 32),
-
-          // Action button to open location search modal
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primaryPink,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-              onPressed: () {
-                Get.to(() => const LocationSearchModal());
-              },
-              icon: const Icon(Icons.search, color: Colors.white),
-              label: const Text(
-                'Search Location',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 32),
-
-          // Popular Locations list suggestions
-          Obx(() {
-            final suggestions = controller.locationSuggestions;
-            if (suggestions.isEmpty) return const SizedBox.shrink();
-
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Popular Destinations',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: suggestions.map((loc) {
-                    return ActionChip(
-                      avatar: const Icon(Icons.location_on, size: 16, color: primaryPink),
-                      label: Text(
-                        loc.name,
-                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                      ),
-                      backgroundColor: const Color(0xFFF6F6F9),
-                      side: BorderSide(color: Colors.grey.shade200),
-                      onPressed: () {
-                        controller.selectLocation(loc);
-                      },
-                    );
-                  }).toList(),
-                ),
-              ],
-            );
-          }),
         ],
       ),
     );

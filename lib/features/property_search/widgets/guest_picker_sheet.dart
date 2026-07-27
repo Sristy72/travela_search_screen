@@ -2,32 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/property_search_controller.dart';
 
-class GuestPickerSheet extends StatefulWidget {
+class GuestPickerSheet extends StatelessWidget {
   const GuestPickerSheet({super.key});
 
   static const Color primaryPink = Color(0xFFE51D5A);
 
   @override
-  State<GuestPickerSheet> createState() => _GuestPickerSheetState();
-}
-
-class _GuestPickerSheetState extends State<GuestPickerSheet> {
-  late int _adults;
-  late int _children;
-  late int _infants;
-
-  @override
-  void initState() {
-    super.initState();
-    final controller = Get.find<PropertySearchController>();
-    _adults = controller.adultsCount.value;
-    _children = controller.childCount.value;
-    _infants = controller.infantCount.value;
-  }
-
-  @override
   Widget build(BuildContext context) {
     final controller = Get.find<PropertySearchController>();
+    final adults = controller.adultsCount.value.obs;
+    final children = controller.childCount.value.obs;
+    final infants = controller.infantCount.value.obs;
 
     return Container(
       decoration: const BoxDecoration(
@@ -67,36 +52,36 @@ class _GuestPickerSheetState extends State<GuestPickerSheet> {
           const SizedBox(height: 24),
 
           // Adults Counter Row
-          _GuestCounterRow(
-            title: 'Adults',
-            subtitle: 'Ages 13 or above',
-            count: _adults,
-            minCount: 1,
-            onDecrement: () => setState(() => _adults--),
-            onIncrement: () => setState(() => _adults++),
-          ),
+          Obx(() => _GuestCounterRow(
+                title: 'Adults',
+                subtitle: 'Ages 13 or above',
+                count: adults.value,
+                minCount: 1,
+                onDecrement: () => adults.value--,
+                onIncrement: () => adults.value++,
+              )),
           const Divider(height: 32, color: Color(0xFFF0F0F0)),
 
           // Children Counter Row
-          _GuestCounterRow(
-            title: 'Child',
-            subtitle: 'Ages 2-12',
-            count: _children,
-            minCount: 0,
-            onDecrement: () => setState(() => _children--),
-            onIncrement: () => setState(() => _children++),
-          ),
+          Obx(() => _GuestCounterRow(
+                title: 'Child',
+                subtitle: 'Ages 2-12',
+                count: children.value,
+                minCount: 0,
+                onDecrement: () => children.value--,
+                onIncrement: () => children.value++,
+              )),
           const Divider(height: 32, color: Color(0xFFF0F0F0)),
 
           // Infants Counter Row
-          _GuestCounterRow(
-            title: 'Infants',
-            subtitle: 'Under 2',
-            count: _infants,
-            minCount: 0,
-            onDecrement: () => setState(() => _infants--),
-            onIncrement: () => setState(() => _infants++),
-          ),
+          Obx(() => _GuestCounterRow(
+                title: 'Infants',
+                subtitle: 'Under 2',
+                count: infants.value,
+                minCount: 0,
+                onDecrement: () => infants.value--,
+                onIncrement: () => infants.value++,
+              )),
           const SizedBox(height: 32),
 
           // Action Buttons
@@ -129,7 +114,7 @@ class _GuestPickerSheetState extends State<GuestPickerSheet> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     onPressed: () {
-                      controller.setGuests(_adults, _children, _infants);
+                      controller.setGuests(adults.value, children.value, infants.value);
                       Get.back();
                     },
                     child: const Text(

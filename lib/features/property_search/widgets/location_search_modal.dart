@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/property_search_controller.dart';
 import '../models/location_model.dart';
+import 'date_range_picker_sheet.dart';
 
 class LocationSearchModal extends StatelessWidget {
   const LocationSearchModal({super.key});
@@ -86,6 +87,7 @@ class LocationSearchModal extends StatelessWidget {
                   ),
                 );
                 Get.back();
+                Get.to(() => const DateRangePickerSheet());
               },
             ),
             const Divider(height: 1, indent: 16, endIndent: 16, color: Color(0xFFEEEEEE)),
@@ -125,9 +127,10 @@ class LocationSearchModal extends StatelessWidget {
                       onTap: () {
                         controller.selectLocation(loc);
                         Get.back();
+                        Get.to(() => const DateRangePickerSheet());
                       },
                     ),
-                    const Divider(height: 1, indent: 64, color: Color(0xFFF0F0F0)),
+                    const Divider(height: 1, indent: 16, endIndent: 16, color: Color(0xFFEEEEEE)),
                   ],
                 );
               }),
