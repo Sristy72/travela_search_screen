@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/location_model.dart';
+import '../models/property_item_model.dart';
 import '../models/search_filter_model.dart';
 
 class SseEvent {
@@ -24,21 +25,25 @@ class PropertySearchService {
             : null,
       );
 
+      debugPrint('🌐 [API REQUEST] GET $uri');
+
       final response = await http.get(uri);
+      debugPrint('📩 [API RESPONSE ${response.statusCode}] $uri');
+
       if (response.statusCode == 200) {
         final decoded = jsonDecode(response.body) as Map<String, dynamic>;
         final data = decoded['data'] as List<dynamic>? ?? [];
+        debugPrint('✅ [API SUCCESS] Loaded ${data.length} locations');
         return data
             .whereType<Map<String, dynamic>>()
             .map((json) => LocationModel.fromJson(json))
             .toList();
       } else {
+        debugPrint('❌ [API ERROR ${response.statusCode}] ${response.body}');
         throw Exception('Failed to load locations (${response.statusCode})');
       }
     } catch (e) {
-      if (kDebugMode) {
-        print('Error fetching popular locations: $e');
-      }
+      debugPrint('💥 [API EXCEPTION] Error fetching popular locations: $e');
       rethrow;
     }
   }
@@ -55,12 +60,17 @@ class PropertySearchService {
     final queryParams = filter.toQueryParams();
     final uri = Uri.parse('$baseUrl/search/stream').replace(queryParameters: queryParams);
 
+    debugPrint('🌐 [API STREAM REQUEST] GET $uri');
+
     final request = http.Request('GET', uri);
     request.headers['Accept'] = 'text/event-stream';
     request.headers['Cache-Control'] = 'no-cache';
 
     client.send(request).then((response) {
+      debugPrint('📡 [API STREAM CONNECTED ${response.statusCode}] $uri');
+
       if (response.statusCode != 200) {
+        debugPrint('❌ [API STREAM ERROR] Server returned status code ${response.statusCode}');
         onError?.call('Server returned status code ${response.statusCode}');
         client.close();
         return;
@@ -101,7 +111,7 @@ class PropertySearchService {
           }
         },
         onError: (error) {
-          if (kDebugMode) print('SSE Stream Error: $error');
+          debugPrint('💥 [API STREAM ERROR] $error');
           onError?.call(error);
         },
         onDone: () {
@@ -109,13 +119,14 @@ class PropertySearchService {
           if (currentEvent != null && dataBuffer.isNotEmpty) {
             _dispatchSseEvent(currentEvent!, dataBuffer.toString(), onEvent, onError);
           }
+          debugPrint('🏁 [API STREAM COMPLETED] $uri');
           onDone?.call();
           client.close();
         },
         cancelOnError: true,
       );
     }).catchError((error) {
-      if (kDebugMode) print('SSE Connection Error: $error');
+      debugPrint('💥 [API STREAM CONNECTION EXCEPTION] $error');
       onError?.call(error);
       client.close();
     });
@@ -131,10 +142,36 @@ class PropertySearchService {
   ) {
     try {
       final decodedData = jsonDecode(rawData);
+      debugPrint('⚡ [SSE EVENT DISPATCHED] Event: "$event"');
       onEvent(SseEvent(event: event, data: decodedData));
     } catch (e) {
-      if (kDebugMode) print('Error parsing SSE json data: $e');
+      debugPrint('⚠️ [SSE PARSE ERROR] Event: "$event" | Error: $e');
       onError?.call('Failed to parse event data: $e');
     }
+  }
+
+  /// Fetches next page of property search results using [nextUrl] from pagination meta
+  Future<List<PropertyItemModel>> fetchNextPage(String nextUrl) async {
+    try {
+      final uri = Uri.parse(nextUrl);
+      debugPrint('🌐 [API LOAD MORE REQUEST] GET $uri');
+      final response = await http.get(uri);
+      debugPrint('📩 [API LOAD MORE RESPONSE ${response.statusCode}] $uri');
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+        final data = decoded['data'] as List<dynamic>? ?? [];
+        debugPrint('✅ [API LOAD MORE SUCCESS] Loaded ${data.length} additional properties');
+        return data
+            .whereType<Map<String, dynamic>>()
+            .map((json) => PropertyItemModel.fromJson(json))
+            .toList();
+      } else {
+        debugPrint('❌ [API LOAD MORE ERROR ${response.statusCode}] ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('💥 [API LOAD MORE EXCEPTION] $e');
+    }
+    return [];
   }
 }

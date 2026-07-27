@@ -161,8 +161,19 @@ class PropertySearchController extends BaseController {
     cancelActiveStream();
     selectedLocation.value = null;
     locationQuery.value = '';
+    checkInDate.value = null;
+    checkOutDate.value = null;
+    adultsCount.value = 0;
+    childCount.value = 0;
+    infantCount.value = 0;
+    minPrice.value = null;
+    maxPrice.value = null;
+    instantBookingOnly.value = false;
+    minRating.value = null;
     searchState.value = PropertySearchState.initial;
     properties.clear();
+    totalCount.value = 0;
+    nextPageUrl.value = null;
     _applyFallbackLocations('');
     fetchPopularLocations('');
   }
@@ -286,11 +297,37 @@ class PropertySearchController extends BaseController {
     );
   }
 
+  // Pagination State
+  final paginationMeta = Rxn<Map<String, dynamic>>();
+  final nextPageUrl = RxnString();
+  final isPageLoading = false.obs;
+
   void _handleMetaEvent(dynamic data) {
     if (data is Map<String, dynamic>) {
       final meta = SearchMetaModel.fromJson(data);
       totalCount.value = meta.totalCount;
       filterMeta.value = meta.filterMeta;
+      paginationMeta.value = meta.pagination;
+      if (meta.pagination != null && meta.pagination!['next'] != null) {
+        nextPageUrl.value = meta.pagination!['next'].toString();
+      }
+    }
+  }
+
+  /// Load next page of results using pagination.next URL
+  Future<void> loadMoreProperties() async {
+    final nextUrl = nextPageUrl.value;
+    if (nextUrl == null || nextUrl.isEmpty || isPageLoading.value) return;
+
+    try {
+      isPageLoading.value = true;
+      final newProperties = await _service.fetchNextPage(nextUrl);
+      if (newProperties.isNotEmpty) {
+        properties.addAll(newProperties);
+      }
+      nextPageUrl.value = null; // Clear to prevent duplicated fetches
+    } finally {
+      isPageLoading.value = false;
     }
   }
 

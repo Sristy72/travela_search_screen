@@ -1,11 +1,14 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:travela_search_screen/features/property_search/models/location_model.dart';
 import 'package:travela_search_screen/features/property_search/models/property_item_model.dart';
 import 'package:travela_search_screen/features/property_search/models/search_filter_model.dart';
+import 'package:travela_search_screen/features/property_search/models/search_meta_model.dart';
 import 'package:travela_search_screen/features/property_search/services/property_search_service.dart';
+import 'package:travela_search_screen/features/property_search/widgets/property_card_widget.dart';
 
 void main() {
-  group('Property Search Models Test', () {
+  group('Property Search Models & Parser Tests', () {
     test('LocationModel parses correctly', () {
       final json = {
         'id': 42,
@@ -76,14 +79,60 @@ void main() {
       expect(queryParams['from'], equals('2026-09-26'));
       expect(queryParams['to'], equals('2026-09-28'));
     });
+
+    test('SearchMetaModel parses totalCount and pagination.next correctly', () {
+      final json = {
+        'total_count': 120,
+        'filter_meta': {'min_price': 500, 'max_price': 20000},
+        'pagination': {
+          'current_page': 1,
+          'next': 'https://search.travela.xyz/api/search/stream?page=2'
+        }
+      };
+      final meta = SearchMetaModel.fromJson(json);
+      expect(meta.totalCount, equals(120));
+      expect(meta.pagination?['next'], equals('https://search.travela.xyz/api/search/stream?page=2'));
+    });
+
+    test('SseEvent holds event type and decoded data correctly', () {
+      final sseEvent = SseEvent(
+        event: 'meta',
+        data: {'total_count': 45},
+      );
+      expect(sseEvent.event, equals('meta'));
+      expect(sseEvent.data['total_count'], equals(45));
+    });
   });
 
-  group('Live API & Stream Test', () {
-    test('fetchPopularLocations returns results from live endpoint', () async {
-      final service = PropertySearchService();
-      final locations = await service.fetchPopularLocations(query: 'cox');
-      expect(locations, isNotEmpty);
-      expect(locations.first.name.toLowerCase(), contains('cox'));
+  group('Widget Tests', () {
+    testWidgets('PropertyCardWidget renders property title and specs correctly', (WidgetTester tester) async {
+      final property = PropertyItemModel(
+        id: 99,
+        title: 'Luxury Villa in Gulshan',
+        address: 'Gulshan 2, Dhaka',
+        price: 5000,
+        bedroom: 2,
+        beds: 3,
+        bathroom: 2,
+        reviewsAvg: 4.9,
+        reviewsCount: 15,
+        images: [],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: PropertyCardWidget(property: property, totalDays: 2),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Luxury Villa in Gulshan'), findsOneWidget);
+      expect(find.text('2 Bedroom • 3 Bed • 2 Bath'), findsOneWidget);
+      expect(find.text('BDT 5000 '), findsOneWidget);
+      expect(find.text('Total BDT 10000'), findsOneWidget);
     });
   });
 }

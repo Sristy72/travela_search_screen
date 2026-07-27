@@ -77,22 +77,45 @@ class PropertySearchScreen extends StatelessWidget {
                                 return _buildEmptyState(controller);
                               }
 
-                              // Render properties stream cards in real time as they land
-                              return ListView.builder(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                itemCount: properties.length,
-                                itemBuilder: (context, index) {
-                                  final property = properties[index];
-                                  final days = controller.checkOutDate.value != null && controller.checkInDate.value != null
-                                      ? controller.checkOutDate.value!.difference(controller.checkInDate.value!).inDays
-                                      : 2;
-
-                                  return PropertyCardWidget(
-                                    key: ValueKey('prop_${property.id}'),
-                                    property: property,
-                                    totalDays: days > 0 ? days : 1,
-                                  );
+                              // Render properties stream cards in real time with pull-to-refresh & pagination
+                              return RefreshIndicator(
+                                color: primaryPink,
+                                onRefresh: () async {
+                                  controller.searchProperties();
                                 },
+                                child: NotificationListener<ScrollNotification>(
+                                  onNotification: (ScrollNotification scrollInfo) {
+                                    if (scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 200) {
+                                      controller.loadMoreProperties();
+                                    }
+                                    return false;
+                                  },
+                                  child: ListView.builder(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    itemCount: properties.length + (controller.isPageLoading.value ? 1 : 0),
+                                    itemBuilder: (context, index) {
+                                      if (index == properties.length) {
+                                        return const Padding(
+                                          padding: EdgeInsets.symmetric(vertical: 16),
+                                          child: Center(
+                                            child: CircularProgressIndicator(color: primaryPink, strokeWidth: 2.5),
+                                          ),
+                                        );
+                                      }
+
+                                      final property = properties[index];
+                                      final days = controller.checkOutDate.value != null && controller.checkInDate.value != null
+                                          ? controller.checkOutDate.value!.difference(controller.checkInDate.value!).inDays
+                                          : 2;
+
+                                      return PropertyCardWidget(
+                                        key: ValueKey('prop_${property.id}'),
+                                        property: property,
+                                        totalDays: days > 0 ? days : 1,
+                                      );
+                                    },
+                                  ),
+                                ),
                               );
                             },
                           ),
@@ -176,20 +199,6 @@ class PropertySearchScreen extends StatelessWidget {
                   ],
                 ),
               ),
-            ),
-
-            // Date / Guest Quick Modals Trigger
-            IconButton(
-              icon: const Icon(Icons.calendar_month_outlined, color: Colors.black87, size: 20),
-              onPressed: () {
-                Get.to(() => const DateRangePickerSheet());
-              },
-            ),
-            IconButton(
-              icon: const Icon(Icons.person_outline, color: Colors.black87, size: 22),
-              onPressed: () {
-                Get.bottomSheet(const GuestPickerSheet());
-              },
             ),
           ],
         ),

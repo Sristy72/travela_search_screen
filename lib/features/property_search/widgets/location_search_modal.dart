@@ -12,6 +12,7 @@ class LocationSearchModal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<PropertySearchController>();
+    final textController = TextEditingController(text: controller.locationQuery.value);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -29,6 +30,7 @@ class LocationSearchModal extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
           child: TextField(
+            controller: textController,
             autofocus: true,
             onChanged: controller.onLocationQueryChanged,
             decoration: InputDecoration(
@@ -41,6 +43,7 @@ class LocationSearchModal extends StatelessWidget {
                   return IconButton(
                     icon: const Icon(Icons.clear, size: 18, color: Colors.grey),
                     onPressed: () {
+                      textController.clear();
                       controller.onLocationQueryChanged('');
                     },
                   );
