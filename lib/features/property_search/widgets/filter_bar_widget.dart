@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/property_search_controller.dart';
+import 'date_range_picker_sheet.dart';
+import 'guest_picker_sheet.dart';
 import 'price_filter_dialog.dart';
 
 class FilterBarWidget extends StatelessWidget {
@@ -18,17 +20,36 @@ class FilterBarWidget extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         children: [
-          // Filter Icon pill
-          _FilterPill(
-            icon: Icons.tune,
-            label: 'Filter',
-            isSelected: controller.minPrice.value != null ||
-                controller.instantBookingOnly.value ||
-                controller.minRating.value != null,
-            onTap: () {
-              Get.bottomSheet(const PriceFilterSheet());
-            },
-          ),
+
+          // Date selecting option pill
+          Obx(() {
+            final hasDates = controller.checkInDate.value != null && controller.checkOutDate.value != null;
+            final label = hasDates ? controller.dateRangeText : 'Dates';
+            return _FilterPill(
+              icon: Icons.calendar_month_outlined,
+              label: label,
+              isSelected: hasDates,
+              onTap: () {
+                Get.to(() => const DateRangePickerSheet());
+              },
+            );
+          }),
+          const SizedBox(width: 8),
+
+          // Guest selecting option pill
+          Obx(() {
+            final guests = controller.totalGuests;
+            final hasGuests = guests > 0;
+            final label = hasGuests ? '$guests Guests' : 'Guests';
+            return _FilterPill(
+              icon: Icons.person_outline,
+              label: label,
+              isSelected: hasGuests,
+              onTap: () {
+                Get.bottomSheet(const GuestPickerSheet());
+              },
+            );
+          }),
           const SizedBox(width: 8),
 
           // Price pill

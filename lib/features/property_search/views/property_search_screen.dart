@@ -13,161 +13,238 @@ class PropertySearchScreen extends StatelessWidget {
 
   static const Color primaryPink = Color(0xFFE51D5A);
 
+  void _handleBackToLocationSearch(PropertySearchController controller) {
+    controller.resetToInitialState();
+    Get.to(() => const LocationSearchModal());
+  }
+
   @override
   Widget build(BuildContext context) {
     final controller = Get.put(PropertySearchController());
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Top Search Header Bar
-            _buildSearchHeader(context, controller),
-            const SizedBox(height: 8),
+    return Obx(() {
+      final isViewingResults = controller.selectedLocation.value != null;
 
-            // Obx body dependent on initial state vs active search
-            Expanded(
-              child: Obx(() {
-                final state = controller.searchState.value;
-                final properties = controller.properties;
+      return PopScope(
+        canPop: !isViewingResults,
+        onPopInvokedWithResult: (didPop, result) {
+          if (didPop) return;
+          if (isViewingResults) {
+            _handleBackToLocationSearch(controller);
+          }
+        },
+        child: Scaffold(
+          backgroundColor: Colors.white,
+          body: SafeArea(
+            child: Column(
+              children: [
+                // Top Search Header Bar (Pill Search Bar when Initial, or Detailed Header)
+                _buildSearchHeader(context, controller),
+                const SizedBox(height: 8),
 
-                if (state == PropertySearchState.initial && properties.isEmpty) {
-                  return _buildInitialSearchState(controller);
-                }
+                // Obx body dependent on initial state vs active search
+                Expanded(
+                  child: Obx(() {
+                    final state = controller.searchState.value;
+                    final properties = controller.properties;
 
-                return Column(
-                  children: [
-                    // Horizontal Filter Pills Row
-                    const FilterBarWidget(),
-                    const SizedBox(height: 8),
+                    if (state == PropertySearchState.initial && properties.isEmpty) {
+                      return _buildInitialSearchState(controller);
+                    }
 
-                    // Live Stream Progress & Total Count Banner
-                    _buildStreamStatusBanner(controller),
+                    return Column(
+                      children: [
+                        // Horizontal Filter Pills Row (including Date and Guest options)
+                        const FilterBarWidget(),
+                        const SizedBox(height: 8),
 
-                    // Main Content Area (Cards / Loader / Empty / Error)
-                    Expanded(
-                      child: Builder(
-                        builder: (context) {
-                          if (state == PropertySearchState.loading && properties.isEmpty) {
-                            return const ShimmerLoadingWidget();
-                          }
+                        // Live Stream Progress & Total Count Banner
+                        _buildStreamStatusBanner(controller),
 
-                          if (state == PropertySearchState.error && properties.isEmpty) {
-                            return _buildErrorState(controller);
-                          }
+                        // Main Content Area (Cards / Loader / Empty / Error)
+                        Expanded(
+                          child: Builder(
+                            builder: (context) {
+                              if (state == PropertySearchState.loading && properties.isEmpty) {
+                                return const ShimmerLoadingWidget();
+                              }
 
-                          if (state == PropertySearchState.empty) {
-                            return _buildEmptyState(controller);
-                          }
+                              if (state == PropertySearchState.error && properties.isEmpty) {
+                                return _buildErrorState(controller);
+                              }
 
-                          // Render properties stream cards in real time as they land
-                          return ListView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            itemCount: properties.length,
-                            itemBuilder: (context, index) {
-                              final property = properties[index];
-                              final days = controller.checkOutDate.value != null && controller.checkInDate.value != null
-                                  ? controller.checkOutDate.value!.difference(controller.checkInDate.value!).inDays
-                                  : 2;
+                              if (state == PropertySearchState.empty) {
+                                return _buildEmptyState(controller);
+                              }
 
-                              return PropertyCardWidget(
-                                key: ValueKey('prop_${property.id}'),
-                                property: property,
-                                totalDays: days > 0 ? days : 1,
+                              // Render properties stream cards in real time as they land
+                              return ListView.builder(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                itemCount: properties.length,
+                                itemBuilder: (context, index) {
+                                  final property = properties[index];
+                                  final days = controller.checkOutDate.value != null && controller.checkInDate.value != null
+                                      ? controller.checkOutDate.value!.difference(controller.checkInDate.value!).inDays
+                                      : 2;
+
+                                  return PropertyCardWidget(
+                                    key: ValueKey('prop_${property.id}'),
+                                    property: property,
+                                    totalDays: days > 0 ? days : 1,
+                                  );
+                                },
                               );
                             },
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                );
-              }),
+                          ),
+                        ),
+                      ],
+                    );
+                  }),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
-    );
+      );
+    });
   }
 
   Widget _buildSearchHeader(BuildContext context, PropertySearchController controller) {
+    return Obx(() {
+      final isInitialState = controller.searchState.value == PropertySearchState.initial &&
+          controller.selectedLocation.value == null;
+
+      if (isInitialState) {
+        return _buildStartYourSearchBar(context, controller);
+      }
+
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(32),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.black87, size: 22),
+              onPressed: () {
+                _handleBackToLocationSearch(controller);
+              },
+            ),
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  Get.to(() => const LocationSearchModal());
+                },
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Obx(() {
+                      final locationName = controller.selectedLocation.value?.name ?? 'Search location';
+                      return Text(
+                        locationName,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: controller.selectedLocation.value != null ? Colors.black87 : Colors.black45,
+                        ),
+                      );
+                    }),
+                    const SizedBox(height: 2),
+                    Obx(() {
+                      final dates = controller.dateRangeText;
+                      final guests = controller.totalGuests > 0 ? '${controller.totalGuests} Guests' : 'Add guests';
+                      return Text(
+                        '$dates • $guests',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+              ),
+            ),
+
+            // Date / Guest Quick Modals Trigger
+            IconButton(
+              icon: const Icon(Icons.calendar_month_outlined, color: Colors.black87, size: 20),
+              onPressed: () {
+                Get.to(() => const DateRangePickerSheet());
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.person_outline, color: Colors.black87, size: 22),
+              onPressed: () {
+                Get.bottomSheet(const GuestPickerSheet());
+              },
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+  /// Rounded Pill Search Bar ("Start your search") matching the screenshot
+  Widget _buildStartYourSearchBar(BuildContext context, PropertySearchController controller) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(32),
+        borderRadius: BorderRadius.circular(40),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 16,
+            color: Colors.black.withOpacity(0.09),
+            blurRadius: 18,
+            spreadRadius: 1,
             offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.black87, size: 22),
-            onPressed: () {
-              if (Get.key.currentState?.canPop() ?? false) {
-                Get.back();
-              }
-            },
-          ),
-          Expanded(
-            child: GestureDetector(
-              onTap: () {
-                Get.to(() => const LocationSearchModal());
-              },
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Obx(() {
-                    final locationName = controller.selectedLocation.value?.name ?? 'Search location';
-                    return Text(
-                      locationName,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: controller.selectedLocation.value != null ? Colors.black87 : Colors.black45,
-                      ),
-                    );
-                  }),
-                  const SizedBox(height: 2),
-                  Obx(() {
-                    final dates = controller.dateRangeText;
-                    final guests = '${controller.totalGuests} Guests';
-                    return Text(
-                      '$dates • $guests',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    );
-                  }),
-                ],
-              ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(40),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(40),
+          onTap: () {
+            Get.to(() => const LocationSearchModal());
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Icon(
+                  Icons.search,
+                  color: Colors.black87,
+                  size: 26,
+                ),
+                SizedBox(width: 12),
+                Text(
+                  'Start your search',
+                  style: TextStyle(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black87,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+              ],
             ),
           ),
-
-          // Date / Guest Quick Modals Trigger
-          IconButton(
-            icon: const Icon(Icons.calendar_month_outlined, color: Colors.black87, size: 20),
-            onPressed: () {
-              Get.to(() => const DateRangePickerSheet());
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.person_outline, color: Colors.black87, size: 22),
-            onPressed: () {
-              Get.bottomSheet(const GuestPickerSheet());
-            },
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -236,19 +313,63 @@ class PropertySearchScreen extends StatelessWidget {
   }
 
   Widget _buildInitialSearchState(PropertySearchController controller) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Text(
-            'Tap the search bar to find hotels, apartments, and luxury stays.',
+        children: [
+          const Text(
+            'Popular Destinations',
             style: TextStyle(
-              fontSize: 14,
-              color: Colors.black54,
-              height: 1.4,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
             ),
           ),
+          const SizedBox(height: 12),
+          Obx(() {
+            final locations = controller.locationSuggestions.isNotEmpty
+                ? controller.locationSuggestions
+                : PropertySearchController.defaultFallbackLocations;
+
+            return ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: locations.take(6).length,
+              separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFEEEEEE)),
+              itemBuilder: (context, index) {
+                final loc = locations[index];
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.location_on_outlined, color: primaryPink, size: 20),
+                  ),
+                  title: Text(
+                    loc.name,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Explore stays around ${loc.name}',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  ),
+                  trailing: const Icon(Icons.chevron_right, color: Colors.grey, size: 20),
+                  onTap: () {
+                    controller.selectLocation(loc);
+                    Get.to(() => const DateRangePickerSheet());
+                  },
+                );
+              },
+            );
+          }),
         ],
       ),
     );

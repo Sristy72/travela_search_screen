@@ -29,7 +29,7 @@ class PropertySearchController extends BaseController {
   // Filter Values
   final checkInDate = Rxn<DateTime>();
   final checkOutDate = Rxn<DateTime>();
-  final adultsCount = 2.obs;
+  final adultsCount = 0.obs;
   final childCount = 0.obs;
   final infantCount = 0.obs;
   final minPrice = RxnDouble();
@@ -154,7 +154,17 @@ class PropertySearchController extends BaseController {
   void selectLocation(LocationModel location) {
     selectedLocation.value = location;
     locationQuery.value = location.name;
-    locationSuggestions.clear();
+  }
+
+  /// Resets controller state back to initial 'Start your search' screen
+  void resetToInitialState() {
+    cancelActiveStream();
+    selectedLocation.value = null;
+    locationQuery.value = '';
+    searchState.value = PropertySearchState.initial;
+    properties.clear();
+    _applyFallbackLocations('');
+    fetchPopularLocations('');
   }
 
   /// User sets Check-In and Check-Out dates

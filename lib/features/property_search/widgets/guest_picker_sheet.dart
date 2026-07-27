@@ -57,7 +57,7 @@ class GuestPickerSheet extends StatelessWidget {
                 title: 'Adults',
                 subtitle: 'Ages 13 or above',
                 count: adults.value,
-                minCount: 1,
+                minCount: 0,
                 onDecrement: () => adults.value--,
                 onIncrement: () => adults.value++,
               )),

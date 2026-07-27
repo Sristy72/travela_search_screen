@@ -52,7 +52,9 @@ class LocationSearchModal extends StatelessWidget {
         ),
       ),
       body: Obx(() {
-        final suggestions = controller.locationSuggestions;
+        final suggestions = controller.locationSuggestions.isNotEmpty
+            ? controller.locationSuggestions
+            : PropertySearchController.defaultFallbackLocations;
         final isLoading = controller.isLocationsLoading.value;
 
         return ListView(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get_navigation/src/root/get_material_app.dart';
+import 'package:travela_search_screen/features/property_search/views/property_search_screen.dart';
 import 'package:travela_search_screen/features/screens/home_screen.dart';
 
 import 'core/init/app_initializer.dart';
@@ -19,7 +20,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Flutter Demo',
       theme: AppTheme.light,
-      home: HomeScreen(),
+      home: PropertySearchScreen(),
     );
   }
 }
