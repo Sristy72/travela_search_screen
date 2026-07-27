@@ -1,0 +1,23 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+import 'app_colors.dart';
+
+class AppTheme {
+  static ThemeData get light => ThemeData(
+    scaffoldBackgroundColor: AppColors.primaryBG,
+    primaryColor: AppColors.primaryButtonDeep,
+    colorScheme: ColorScheme.light(primary: AppColors.primaryButtonDeep),
+
+    textTheme: GoogleFonts.poppinsTextTheme(ThemeData.light().textTheme).apply(
+      bodyColor: AppColors.primaryBlack,
+      displayColor: AppColors.primaryBlack,
+    ),
+
+    appBarTheme: AppBarThemeData(
+      iconTheme: IconThemeData(color: AppColors.appBarIconColor),
+      backgroundColor: AppColors.primaryBG,
+      titleTextStyle: TextStyle(fontWeight: FontWeight.w700, fontSize: 24),
+    ),
+  );
+}
